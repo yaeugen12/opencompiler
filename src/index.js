@@ -41,6 +41,9 @@ const {
   BuildStatus,
 } = require('./buildManager');
 
+// Database
+const { initDatabase } = require('./db');
+
 // Agent routes
 const agentRouter = require('./routes/agent');
 const { getAgentByCode } = require('./agentAuth');
@@ -805,6 +808,9 @@ async function startServer() {
     } else {
       logger.info(`✓ Docker image found: ${config.dockerImage}`);
     }
+
+    // Initialize agent database
+    await initDatabase();
 
     // Create necessary directories
     await fs.mkdir(config.builds.uploadDir, { recursive: true });
