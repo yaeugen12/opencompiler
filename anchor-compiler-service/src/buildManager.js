@@ -212,8 +212,13 @@ async function scanArtifacts(outputDir) {
 
   try {
     // Artifacts are copied to /output/target/ inside Docker.
-    // Docker mounts outputDir as /output, so artifacts land at <outputDir>/target/.
-    const targetDir = path.join(outputDir, 'target');
+    // Check both <outputDir>/target/ and <outputDir>/output/target/ (index.js adds /output)
+    let targetDir = path.join(outputDir, 'target');
+    try {
+      await fs.access(targetDir);
+    } catch {
+      targetDir = path.join(outputDir, 'output', 'target');
+    }
 
     const deployDir = path.join(targetDir, 'deploy');
     try {
