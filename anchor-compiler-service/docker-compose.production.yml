@@ -22,8 +22,8 @@ services:
       - AGENT_ADMIN_KEY=${AGENT_ADMIN_KEY:-}
       - HOST_BUILD_DIR=${HOST_BUILD_DIR:-}
     volumes:
-      - uploads_data:/app/uploads
-      - builds_data:/app/builds
+      - /app/uploads:/app/uploads
+      - /app/builds:/app/builds
       - logs_data:/app/logs
       - data_db:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
