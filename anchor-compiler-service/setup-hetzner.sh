@@ -8,7 +8,7 @@ set -e
 
 DOMAIN="${1:-api.opencompiler.io}"
 EMAIL="${2:-}"
-GITHUB_REPO="anchor-compiler-service"
+GITHUB_REPO="https://github.com/yaeugen12/opencompiler.git"
 
 echo "=========================================="
 echo "  OpenCompiler API - Hetzner Setup"
@@ -78,19 +78,17 @@ echo "Firewall configured (SSH + HTTP + HTTPS)"
 
 # ===== 6. Clone and Setup Project =====
 echo "[6/8] Setting up project..."
-PROJECT_DIR="/opt/anchor-compiler"
-mkdir -p "$PROJECT_DIR"
-cd "$PROJECT_DIR"
+PROJECT_DIR="/opt/opencompiler/anchor-compiler-service"
+mkdir -p /opt/opencompiler
 
-# If project files aren't here yet, show instructions
+# Clone repo if not already present
 if [ ! -f "docker-compose.production.yml" ]; then
-    echo ""
-    echo "Project files not found. Clone from GitHub:"
-    echo "  git clone https://github.com/YOUR_USERNAME/$GITHUB_REPO /opt/anchor-compiler"
-    echo ""
-    echo "Or copy manually:"
-    echo "  scp -r ./* root@YOUR_SERVER_IP:/opt/anchor-compiler/"
-    echo ""
+    echo "Cloning repository..."
+    cd /opt
+    rm -rf opencompiler
+    git clone "$GITHUB_REPO" opencompiler
+    PROJECT_DIR="/opt/opencompiler/anchor-compiler-service"
+    cd "$PROJECT_DIR"
 fi
 
 # ===== 7. Build Anchor Builder Image =====
@@ -136,8 +134,8 @@ if [ -n "$EMAIL" ]; then
         -d "$DOMAIN"
 
     # Link real certs
-    ln -sf "/opt/anchor-compiler/certbot_certs/live/$DOMAIN/fullchain.pem" nginx/ssl/fullchain.pem
-    ln -sf "/opt/anchor-compiler/certbot_certs/live/$DOMAIN/privkey.pem" nginx/ssl/privkey.pem
+    ln -sf "/opt/opencompiler/anchor-compiler-service/certbot_certs/live/$DOMAIN/fullchain.pem" nginx/ssl/fullchain.pem
+    ln -sf "/opt/opencompiler/anchor-compiler-service/certbot_certs/live/$DOMAIN/privkey.pem" nginx/ssl/privkey.pem
 
     echo "SSL certificate obtained for $DOMAIN"
 else

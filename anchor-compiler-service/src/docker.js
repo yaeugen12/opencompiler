@@ -133,7 +133,7 @@ async function executeAnchorBuild(buildId, projectPath, outputPath, anchorSubdir
       WorkingDir: workDir,
       HostConfig: {
         Binds: [
-          `${path.resolve(outputPath)}:/output:rw`,
+          `${process.env.HOST_BUILD_DIR ? path.join(process.env.HOST_BUILD_DIR, path.basename(outputPath)) : path.resolve(outputPath)}:/output:rw`,
         ],
         Memory: config.docker.memory,
         MemorySwap: config.docker.memorySwap,

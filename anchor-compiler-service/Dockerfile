@@ -1,7 +1,7 @@
 FROM node:18-alpine
 
 # Install curl for healthcheck
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl git
 
 # Create app directory
 WORKDIR /app
@@ -16,9 +16,9 @@ RUN npm ci --only=production
 COPY src ./src
 COPY skill.md ./skill.md
 
-# Create necessary directories
-RUN mkdir -p uploads builds logs && \
-    chmod 755 uploads builds logs
+# Create necessary directories and set ownership before switching user
+RUN mkdir -p uploads builds logs data && \
+    chown -R node:node uploads builds logs data
 
 # Expose port
 EXPOSE 5000
