@@ -1,0 +1,7 @@
+{
+  "name": "opencompiler-frontend",
+  "version": "1.0.0",
+  "description": "Solana Anchor smart contract compiler IDE",
+  "private": true,
+  "license": "MIT"
+}

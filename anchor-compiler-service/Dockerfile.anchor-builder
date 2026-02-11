@@ -1,0 +1,66 @@
+# Use Rust 1.90 on Debian Bookworm (GLIBC 2.36)
+FROM rust:1.90-bookworm
+
+# Install system dependencies including bash
+RUN apt-get update && apt-get install -y \
+    bash \
+    sudo \
+    ca-certificates \
+    build-essential \
+    curl \
+    git \
+    pkg-config \
+    libssl-dev \
+    libudev-dev \
+    llvm \
+    clang \
+    make \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js + npm
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm
+
+# Install Yarn (optional)
+RUN npm install -g yarn
+
+# Install Anchor CLI v0.31.1
+RUN cargo install --locked --version 0.31.1 anchor-cli
+
+# Install Agave 3.1.8 (latest stable) - Download pre-built binaries from Anza
+# Agave is the new Solana Labs validator client
+RUN mkdir -p /root/.local/share/solana/install/releases/3.1.8 && \
+    cd /root/.local/share/solana/install/releases/3.1.8 && \
+    curl -L https://github.com/anza-xyz/agave/releases/download/v3.1.8/solana-release-x86_64-unknown-linux-gnu.tar.bz2 -o solana-release.tar.bz2 && \
+    tar -xjf solana-release.tar.bz2 && \
+    rm solana-release.tar.bz2 && \
+    cd /root/.local/share/solana/install && \
+    ln -s releases/3.1.8/solana-release active_release
+
+# Add Agave/Solana binaries to PATH
+ENV PATH="/root/.local/share/solana/install/active_release/bin:$PATH"
+
+# Verify installations
+RUN anchor --version && solana --version
+
+# Pre-download and cache platform-tools to avoid runtime downloads
+# Download directly from GitHub releases (more reliable than cargo-build-sbf)
+RUN mkdir -p /root/.cache/solana/v1.52/platform-tools && \
+    cd /root/.cache/solana/v1.52/platform-tools && \
+    curl --retry 5 --retry-delay 10 -L \
+    https://github.com/solana-labs/platform-tools/releases/download/v1.52/platform-tools-linux-x86_64.tar.bz2 \
+    -o platform-tools-linux-x86_64.tar.bz2 && \
+    tar -xjf platform-tools-linux-x86_64.tar.bz2 && \
+    rm platform-tools-linux-x86_64.tar.bz2 && \
+    echo "Platform tools cached successfully"
+
+# Set working directory
+WORKDIR /workspace
+
+# Expose local validator ports
+EXPOSE 8899 8900 8901 8902
+
+# Default command
+CMD ["/bin/bash"]

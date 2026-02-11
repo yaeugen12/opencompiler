@@ -1,0 +1,29 @@
+# Ignore everything
+*
+
+# Except these two project folders
+!anchor-compiler-service/
+!anchor-compiler-service/**
+!solana-compiler-frontend/
+!solana-compiler-frontend/**
+
+# But still ignore these inside projects
+anchor-compiler-service/node_modules/
+anchor-compiler-service/.env
+anchor-compiler-service/.env.production
+anchor-compiler-service/uploads/
+anchor-compiler-service/builds/
+anchor-compiler-service/logs/
+anchor-compiler-service/data/
+anchor-compiler-service/nginx/ssl/
+anchor-compiler-service/*.log
+anchor-compiler-service/nul
+anchor-compiler-service/.DS_Store
+anchor-compiler-service/.claude/
+
+solana-compiler-frontend/node_modules/
+solana-compiler-frontend/.env
+solana-compiler-frontend/.DS_Store
+
+# Keep this gitignore
+!.gitignore
