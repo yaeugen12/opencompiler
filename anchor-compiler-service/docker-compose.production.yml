@@ -20,6 +20,7 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - BUILD_TIMEOUT=${BUILD_TIMEOUT:-600}
       - AGENT_ADMIN_KEY=${AGENT_ADMIN_KEY:-}
+      - HOST_BUILD_DIR=${HOST_BUILD_DIR:-}
     volumes:
       - uploads_data:/app/uploads
       - builds_data:/app/builds
