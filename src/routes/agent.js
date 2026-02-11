@@ -173,13 +173,14 @@ router.post('/agent/register', async (req, res) => {
           method: 'POST',
           url: baseUrl + '/api/v1/build',
           headers: { 'X-Agent-Key': agent.api_key, 'Content-Type': 'application/json' },
-          body: '{ "name": "program_name", "files": { "programs/<name>/src/lib.rs": "...", "Anchor.toml": "...", "Cargo.toml": "..." }, "smartBuild": true }',
+          body: '{ "name": "program_name", "files": { "programs/<name>/src/lib.rs": "...", "Anchor.toml": "...", "Cargo.toml": "..." } }',
+          note: 'No AI fix — agents receive raw build errors and must fix code themselves',
         },
         build_from_github: {
           method: 'POST',
           url: baseUrl + '/api/v1/build',
           headers: { 'X-Agent-Key': agent.api_key, 'Content-Type': 'application/json' },
-          body: '{ "github_url": "https://github.com/user/repo", "smartBuild": true }',
+          body: '{ "github_url": "https://github.com/user/repo" }',
         },
         check_status: 'GET ' + baseUrl + '/api/v1/build/:buildId',
         get_artifacts: 'GET ' + baseUrl + '/api/v1/build/:buildId/artifacts',
@@ -342,7 +343,8 @@ router.post('/project/create', agentApiLimiter, requireAgentKey, async (req, res
  */
 router.post('/build', agentBuildLimiter, requireAgentKey, async (req, res) => {
   try {
-    const { name, files, github_url, smartBuild: useSmartBuild = true, timeout = 600 } = req.body;
+    const { name, files, github_url, timeout = 600 } = req.body;
+    const useSmartBuild = false; // Agents must fix errors themselves — no AI assistance
 
     // ── Per-agent concurrency check ──
     const agentId = req.agent.agent_id;
@@ -537,7 +539,8 @@ router.post('/build', agentBuildLimiter, requireAgentKey, async (req, res) => {
 router.post('/project/:buildId/build', agentBuildLimiter, requireAgentKey, async (req, res) => {
   try {
     const { buildId } = req.params;
-    const { smartBuild: useSmartBuild = true, timeout = 600 } = req.body || {};
+    const { timeout = 600 } = req.body || {};
+    const useSmartBuild = false; // Agents must fix errors themselves — no AI assistance
 
     // ── Per-agent concurrency check ──
     const agentId = req.agent.agent_id;

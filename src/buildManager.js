@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const extractZip = require('extract-zip');
+const crypto = require('crypto');
 const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
@@ -9,6 +10,11 @@ const { executeAnchorBuild } = require('./docker');
 const config = require('./config');
 
 const builds = new Map();
+
+// Generate a secure download token for each build
+function generateDownloadToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
 
 const BuildStatus = {
   PENDING: 'pending',
@@ -22,6 +28,7 @@ async function extractProject(buildId, filePath, fileType = 'zip') {
   const projectDir = path.join(config.builds.uploadDir, buildId);
   const outputDir = path.join(config.builds.buildDir, buildId);
 
+  const downloadToken = generateDownloadToken();
   builds.set(buildId, {
     id: buildId,
     status: 'ready', // Not running yet
@@ -29,6 +36,8 @@ async function extractProject(buildId, filePath, fileType = 'zip') {
     updatedAt: new Date(),
     projectDir,
     outputDir,
+    downloadToken,
+    downloaded: false,
     logs: { stdout: '', stderr: '' },
   });
 
@@ -81,6 +90,7 @@ async function startBuild(filePath, fileType = 'zip') {
   const projectDir = path.join(config.builds.uploadDir, buildId);
   const outputDir = path.join(config.builds.buildDir, buildId);
 
+  const downloadToken = generateDownloadToken();
   builds.set(buildId, {
     id: buildId,
     status: BuildStatus.PENDING,
@@ -88,6 +98,8 @@ async function startBuild(filePath, fileType = 'zip') {
     updatedAt: new Date(),
     projectDir,
     outputDir,
+    downloadToken,
+    downloaded: false,
   });
 
   (async () => {
@@ -188,7 +200,32 @@ function listBuilds() {
   return Array.from(builds.values());
 }
 
-async function getBuildArtifacts(buildId) {
+// Verify download token — only the build owner can access artifacts
+function verifyDownloadToken(buildId, token) {
+  const build = builds.get(buildId);
+  if (!build) return false;
+  if (!build.downloadToken) return false;
+  return crypto.timingSafeEqual(
+    Buffer.from(build.downloadToken, 'hex'),
+    Buffer.from(token, 'hex')
+  );
+}
+
+// Delete build artifacts from disk (after download)
+async function deleteBuildArtifacts(buildId) {
+  const build = builds.get(buildId);
+  if (!build) return;
+  try {
+    if (build.outputDir) await fs.rm(build.outputDir, { recursive: true, force: true });
+    if (build.projectDir) await fs.rm(build.projectDir, { recursive: true, force: true });
+    build.downloaded = true;
+    console.log(`[${buildId}] [security] Artifacts deleted from disk after download`);
+  } catch (err) {
+    console.warn(`[${buildId}] Failed to delete artifacts: ${err.message}`);
+  }
+}
+
+async function getBuildArtifacts(buildId, token) {
   const build = builds.get(buildId);
   if (!build) {
     throw new Error('Build not found');
@@ -196,6 +233,17 @@ async function getBuildArtifacts(buildId) {
 
   if (build.status !== BuildStatus.SUCCESS) {
     throw new Error(`Build not successful. Status: ${build.status}`);
+  }
+
+  // If build has a download token, verify it
+  if (build.downloadToken && token) {
+    if (!verifyDownloadToken(buildId, token)) {
+      throw new Error('Invalid download token. Only the build owner can access artifacts.');
+    }
+  }
+
+  if (build.downloaded) {
+    throw new Error('Artifacts already downloaded and deleted from server.');
   }
 
   const artifacts = await scanArtifacts(build.outputDir);
@@ -347,6 +395,7 @@ async function startBuildFromGithub(repoUrl, autoBuild = false, metadata = {}) {
   const { cloneUrl, branch, subfolder } = parseGithubUrl(repoUrl);
 
   // Initialize build record
+  const downloadToken = generateDownloadToken();
   builds.set(buildId, {
     id: buildId,
     status: autoBuild ? BuildStatus.PENDING : 'ready',
@@ -354,6 +403,8 @@ async function startBuildFromGithub(repoUrl, autoBuild = false, metadata = {}) {
     updatedAt: new Date(),
     projectDir,
     outputDir,
+    downloadToken,
+    downloaded: false,
     source: 'github',
     repoUrl,
     logs: { stdout: '', stderr: '' },
@@ -481,6 +532,7 @@ async function createProjectFromFiles(name, files, metadata = {}) {
     await fs.writeFile(fullPath, content, 'utf-8');
   }
 
+  const downloadToken = generateDownloadToken();
   builds.set(buildId, {
     id: buildId,
     status: 'ready',
@@ -488,6 +540,8 @@ async function createProjectFromFiles(name, files, metadata = {}) {
     updatedAt: new Date(),
     projectDir,
     outputDir,
+    downloadToken,
+    downloaded: false,
     logs: { stdout: '', stderr: '' },
     ...metadata,
   });
@@ -506,5 +560,7 @@ module.exports = {
   generateBuildId,
   updateBuildStatus,
   createProjectFromFiles,
+  verifyDownloadToken,
+  deleteBuildArtifacts,
   BuildStatus,
 };

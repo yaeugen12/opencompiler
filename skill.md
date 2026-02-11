@@ -10,7 +10,6 @@ auth:
 capabilities:
   - compile_solana_programs
   - build_from_github
-  - ai_powered_build_fixing
   - idl_generation
   - typescript_type_generation
   - program_deployment
@@ -23,9 +22,9 @@ capabilities:
 Compiles, builds, and deploys Solana Anchor smart contracts. AI agents can:
 
 - **Send Rust source code** and receive compiled `.so` programs, IDL JSON, and TypeScript types
-- **Use AI-powered "smart build"** that automatically detects and fixes build errors (up to 8 iterations)
 - **Deploy compiled programs** to Solana devnet or mainnet
 - **Manage project files** — create, read, update, delete individual files in a project
+- **Fix errors yourself** — when a build fails, read the errors, fix the code, and rebuild
 
 ## Authentication
 
@@ -95,8 +94,7 @@ Content-Type: application/json
     "Anchor.toml": "[toolchain]\nanchor_version = \"0.31.1\"\n\n[features]\nresolution = true\nskip-lint = false\n\n[programs.localnet]\nmy_program = \"Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS\"\n\n[registry]\nurl = \"https://api.apr.dev\"\n\n[provider]\ncluster = \"Localnet\"\nwallet = \"~/.config/solana/id.json\"",
     "Cargo.toml": "[workspace]\nmembers = [\"programs/my_program\"]\nresolver = \"2\"\n\n[profile.release]\noverflow-checks = true\nlto = \"fat\"\ncodegen-units = 1",
     "programs/my_program/Cargo.toml": "[package]\nname = \"my-program\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[lib]\ncrate-type = [\"cdylib\", \"lib\"]\nname = \"my_program\"\n\n[dependencies]\nanchor-lang = \"0.31.1\"\n\n[features]\ndefault = []\nidl-build = [\"anchor-lang/idl-build\"]"
-  },
-  "smartBuild": true
+  }
 }
 ```
 
@@ -108,8 +106,7 @@ X-Agent-Key: <your-key>
 Content-Type: application/json
 
 {
-  "github_url": "https://github.com/user/repo",
-  "smartBuild": true
+  "github_url": "https://github.com/user/repo"
 }
 ```
 
@@ -198,7 +195,6 @@ Send code and receive compiled result synchronously (up to 10 minutes). Accepts 
       "Anchor.toml": "...",
       "Cargo.toml": "..."
     },
-    "smartBuild": true,
     "timeout": 600
   }
   ```
@@ -206,7 +202,6 @@ Send code and receive compiled result synchronously (up to 10 minutes). Accepts 
   ```json
   {
     "github_url": "https://github.com/user/repo",
-    "smartBuild": true,
     "timeout": 600
   }
   ```
@@ -229,7 +224,6 @@ Send code and receive compiled result synchronously (up to 10 minutes). Accepts 
 | `name` | Program name (required for inline files mode) |
 | `files` | Object mapping relative file paths to string contents (use this OR `github_url`) |
 | `github_url` | GitHub repository URL to clone and build (use this OR `files`) |
-| `smartBuild` | `true` (default): AI fixes errors automatically. `false`: single build attempt |
 | `timeout` | Max wait in seconds (default 600, max 600) |
 
 ---
@@ -283,7 +277,7 @@ Delete a file or folder from the project.
 Trigger a build on an existing project (synchronous).
 
 - **Auth**: `X-Agent-Key`
-- **Body**: `{ "smartBuild": true }`
+- **Body**: `{ "timeout": 600 }`
 - **Response**: Same as `POST /api/v1/build`
 
 ## Error Recovery Workflow
@@ -311,7 +305,7 @@ When a build fails, the response includes an `errors` array and a `next_steps` o
 
 6. REBUILD
    POST /api/v1/project/:buildId/build
-   { "smartBuild": true }
+   {}
 
 7. REPEAT until success
 ```
@@ -421,7 +415,7 @@ Anchor.toml                     # Workspace config
 Cargo.toml                      # Workspace Cargo config
 ```
 
-If you set `smartBuild: true` and omit config files, the AI will attempt to generate them automatically.
+You must provide all required config files. If config files are missing, the build will fail — read the errors, add the missing files, and rebuild.
 
 ### Minimal `lib.rs` Template
 
@@ -478,7 +472,6 @@ wallet = "~/.config/solana/id.json"
 
 - Simple program (1 file): 3-4 minutes
 - Complex program with dependencies: 5-7 minutes
-- Smart build with AI fixes: 5-10 minutes (multiple iterations)
 
 ## Real-Time Build Logs (WebSocket)
 
@@ -545,4 +538,4 @@ Program keypairs (`*-keypair.json`) are sensitive — they contain the secret ke
 
 - All builds are cleaned up after 60 minutes
 - Build IDs are UUIDs — treat them as opaque tokens
-- The `smartBuild` mode uses Claude AI to analyze and fix compilation errors
+- When a build fails, you receive the full error output — analyze the errors, fix the code, and rebuild using the project management endpoints
