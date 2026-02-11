@@ -1,35 +1,35 @@
-# Ignore everything
-*
+node_modules/
+.env
+.env.production
+uploads/
+builds/
+logs/
+data/
+nginx/ssl/
+*.log
+nul
+.DS_Store
+.claude/
 
-# Except these project folders
-!anchor-compiler-service/
-!anchor-compiler-service/**
-!solana-compiler-frontend/
-!solana-compiler-frontend/**
-
-# Allow root documentation for GitHub display
-!README.md
-!HACKATHON.md
-!ARCHITECTURE.md
-!WHY_THIS_MATTERS.md
-
-# But still ignore these inside projects
-anchor-compiler-service/node_modules/
-anchor-compiler-service/.env
-anchor-compiler-service/.env.production
-anchor-compiler-service/uploads/
-anchor-compiler-service/builds/
-anchor-compiler-service/logs/
-anchor-compiler-service/data/
-anchor-compiler-service/nginx/ssl/
-anchor-compiler-service/*.log
-anchor-compiler-service/nul
-anchor-compiler-service/.DS_Store
-anchor-compiler-service/.claude/
-
-solana-compiler-frontend/node_modules/
-solana-compiler-frontend/.env
-solana-compiler-frontend/.DS_Store
-
-# Keep this gitignore
-!.gitignore
+# OpenClaw workspace files (not part of OpenCompiler)
+AGENTS.md
+SOUL.md
+USER.md
+IDENTITY.md
+HEARTBEAT.md
+TOOLS.md
+MEMORY.md
+COMMANDS.md
+GITHUB-IMPORT.md
+QUICKSTART.md
+START.sh
+colosseum-hackathon.md
+colosseum_credentials.md
+test-anchor-project.md
+.clawhub/
+memory/
+skills/
+staking/
+staking-contract/
+solana-compiler-frontend/
+privacy-cash-artifacts/
